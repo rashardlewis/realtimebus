@@ -168,7 +168,7 @@ export function getRealTimeInfo(req) {
                     }
                     const responseBody = JSON.parse(res.text)
                     const $ = cheerio.load(responseBody['html'])
-                    const busRealName = $('h3#lh').text()
+                    const busName = $('h3#lh').text()
                     const direction = $('h2#lm').text()
                     const stationInfo = {
                         standardInfo: $('.inquiry_header article p')
@@ -191,7 +191,7 @@ export function getRealTimeInfo(req) {
                         })
                         .get()
                     result['data'] = {
-                        busRealName,
+                        busName,
                         direction,
                         stationInfo,
                         stationList,

@@ -114,7 +114,7 @@ export function getDirectionFromBus(req) {
                     const directions = $('option')
                         .filter(i => i > 0)
                         .map((i, ele) => ({
-                            id: $(ele).attr('value'),
+                            id: Number($(ele).attr('value')),
                             name: $(ele).text()
                         }))
                         .get()
@@ -138,37 +138,23 @@ export function getDirectionFromBus(req) {
 
 // 根据公交名称和当前公交站序号获取实时公交信息
 export function getRealTimeInfo(req) {
-    const {
-        query: { busName, directionId, stationIndex }
-    } = req
-    console.log('busName: ', busName)
-    console.log('directionId: ', directionId)
-    console.log('stationIndex: ', stationIndex)
+    const { query: { busName, directionId, staionIndex } } = req
     return new Promise((resolve, reject) => {
         superagent
             .get(targetUrl)
             .query({
                 act: 'busTime',
-                selBLine: String(busName),
-                selBDir: String(directionId),
-                selBStop: String(stationIndex)
+                selBLine: busName,
+                selBDir: directionId,
+                selBStop: staionIndex
             })
             .end((err, res) => {
                 if (err) {
-                    console.log(err)
                     reject(err)
                 } else {
-                    let result = {
-                        data: {},
-                        status: {
-                            code: 200,
-                            message: ''
-                        },
-                        success: true
-                    }
                     const responseBody = JSON.parse(res.text)
                     const $ = cheerio.load(responseBody['html'])
-                    const busRealName = $('h3#lh').text()
+                    const busName = $('h3#lh').text()
                     const direction = $('h2#lm').text()
                     const stationInfo = {
                         standardInfo: $('.inquiry_header article p')
@@ -190,15 +176,19 @@ export function getRealTimeInfo(req) {
                             )
                         })
                         .get()
-                    result['data'] = {
-                        busRealName,
-                        direction,
-                        stationInfo,
-                        stationList,
-                        busList,
-                        currentBusCount: Number(responseBody['seq'])
+                    const response = {
+                        code: 200,
+                        data: {
+                            busName,
+                            direction,
+                            stationInfo,
+                            stationList,
+                            busList,
+                            currentBusCount: Number(responseBody['seq'])
+                        },
+                        status: 'success'
                     }
-                    resolve(result)
+                    resolve(response)
                 }
             })
     })

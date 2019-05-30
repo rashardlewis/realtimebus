@@ -14,8 +14,8 @@ router.get('/bus/list', (req, res) => {
     })
 })
 
-router.get('/bus/direction', (req, res) => {
-    getDirectionFromBus(req).then(response => {
+router.get('/bus/list', (req, res) => {
+    getDirectionFromBus().then(response => {
         res.send(response)
     })
 })

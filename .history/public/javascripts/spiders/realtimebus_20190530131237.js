@@ -114,23 +114,23 @@ export function getDirectionFromBus(req) {
                     const directions = $('option')
                         .filter(i => i > 0)
                         .map((i, ele) => ({
-                            id: $(ele).attr('value'),
+                            id: Number($(ele).attr('value')),
                             name: $(ele).text()
                         }))
                         .get()
-                    const station = directions.find(
-                        v => v.name.indexOf(direction) !== -1
-                    )
-                    if (station) {
-                        result['data']['id'] = station.id
-                    } else {
-                        result['status'] = {
-                            code: 400,
-                            message: '未找到该方向ID'
-                        }
-                        result['success'] = false
-                    }
-                    resolve(result)
+                    // const station = directions.find(
+                    //     v => v.name.indexOf(direction) !== -1
+                    // )
+                    // if (station) {
+                    //     result['data']['id'] = station.id
+                    // } else {
+                    //     result['status'] = {
+                    //         code: 400,
+                    //         message: '未找到该方向ID'
+                    //     }
+                    //     result['success'] = false
+                    // }
+                    resolve(responseBody)
                 }
             })
     })
@@ -149,8 +149,11 @@ export function getRealTimeInfo(req) {
             .get(targetUrl)
             .query({
                 act: 'busTime',
+                // sBl: busName,
                 selBLine: String(busName),
+                // sBd: directionId,
                 selBDir: String(directionId),
+                // sBs: stationIndex,
                 selBStop: String(stationIndex)
             })
             .end((err, res) => {
@@ -158,47 +161,43 @@ export function getRealTimeInfo(req) {
                     console.log(err)
                     reject(err)
                 } else {
-                    let result = {
-                        data: {},
-                        status: {
-                            code: 200,
-                            message: ''
-                        },
-                        success: true
-                    }
                     const responseBody = JSON.parse(res.text)
-                    const $ = cheerio.load(responseBody['html'])
-                    const busRealName = $('h3#lh').text()
-                    const direction = $('h2#lm').text()
-                    const stationInfo = {
-                        standardInfo: $('.inquiry_header article p')
-                            .eq(0)
-                            .text(),
-                        currentInfo: $('.inquiry_header article p')
-                            .eq(1)
-                            .text()
-                    }
-                    const stationList = $('#cc_stop ul li span')
-                        .map((i, ele) => $(ele).attr('title'))
-                        .get()
-                    const busList = $('#cc_stop ul li')
-                        .map((i, ele) => {
-                            return (
-                                $(ele)
-                                    .find('i')
-                                    .attr('class') || ''
-                            )
-                        })
-                        .get()
-                    result['data'] = {
-                        busRealName,
-                        direction,
-                        stationInfo,
-                        stationList,
-                        busList,
-                        currentBusCount: Number(responseBody['seq'])
-                    }
-                    resolve(result)
+                    // const $ = cheerio.load(responseBody['html'])
+                    // const busName = $('h3#lh').text()
+                    // const direction = $('h2#lm').text()
+                    // const stationInfo = {
+                    //     standardInfo: $('.inquiry_header article p')
+                    //         .eq(0)
+                    //         .text(),
+                    //     currentInfo: $('.inquiry_header article p')
+                    //         .eq(1)
+                    //         .text()
+                    // }
+                    // const stationList = $('#cc_stop ul li span')
+                    //     .map((i, ele) => $(ele).attr('title'))
+                    //     .get()
+                    // const busList = $('#cc_stop ul li')
+                    //     .map((i, ele) => {
+                    //         return (
+                    //             $(ele)
+                    //                 .find('i')
+                    //                 .attr('class') || ''
+                    //         )
+                    //     })
+                    //     .get()
+                    // const response = {
+                    //     code: 200,
+                    //     data: {
+                    //         busName,
+                    //         direction,
+                    //         stationInfo,
+                    //         stationList,
+                    //         busList,
+                    //         currentBusCount: Number(responseBody['seq'])
+                    //     },
+                    //     status: 'success'
+                    // }
+                    resolve(res)
                 }
             })
     })

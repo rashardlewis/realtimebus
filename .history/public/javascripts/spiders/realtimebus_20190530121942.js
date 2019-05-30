@@ -114,7 +114,7 @@ export function getDirectionFromBus(req) {
                     const directions = $('option')
                         .filter(i => i > 0)
                         .map((i, ele) => ({
-                            id: $(ele).attr('value'),
+                            id: Number($(ele).attr('value')),
                             name: $(ele).text()
                         }))
                         .get()
@@ -149,56 +149,55 @@ export function getRealTimeInfo(req) {
             .get(targetUrl)
             .query({
                 act: 'busTime',
-                selBLine: String(busName),
-                selBDir: String(directionId),
-                selBStop: String(stationIndex)
+                sBl: busName,
+                // selBLine: busName,
+                sBd: directionId,
+                // selBDir: directionId,
+                sBs: stationIndex,
+                // selBStop: stationIndex
             })
             .end((err, res) => {
                 if (err) {
                     console.log(err)
                     reject(err)
                 } else {
-                    let result = {
-                        data: {},
-                        status: {
-                            code: 200,
-                            message: ''
-                        },
-                        success: true
-                    }
                     const responseBody = JSON.parse(res.text)
-                    const $ = cheerio.load(responseBody['html'])
-                    const busRealName = $('h3#lh').text()
-                    const direction = $('h2#lm').text()
-                    const stationInfo = {
-                        standardInfo: $('.inquiry_header article p')
-                            .eq(0)
-                            .text(),
-                        currentInfo: $('.inquiry_header article p')
-                            .eq(1)
-                            .text()
-                    }
-                    const stationList = $('#cc_stop ul li span')
-                        .map((i, ele) => $(ele).attr('title'))
-                        .get()
-                    const busList = $('#cc_stop ul li')
-                        .map((i, ele) => {
-                            return (
-                                $(ele)
-                                    .find('i')
-                                    .attr('class') || ''
-                            )
-                        })
-                        .get()
-                    result['data'] = {
-                        busRealName,
-                        direction,
-                        stationInfo,
-                        stationList,
-                        busList,
-                        currentBusCount: Number(responseBody['seq'])
-                    }
-                    resolve(result)
+                    // const $ = cheerio.load(responseBody['html'])
+                    // const busName = $('h3#lh').text()
+                    // const direction = $('h2#lm').text()
+                    // const stationInfo = {
+                    //     standardInfo: $('.inquiry_header article p')
+                    //         .eq(0)
+                    //         .text(),
+                    //     currentInfo: $('.inquiry_header article p')
+                    //         .eq(1)
+                    //         .text()
+                    // }
+                    // const stationList = $('#cc_stop ul li span')
+                    //     .map((i, ele) => $(ele).attr('title'))
+                    //     .get()
+                    // const busList = $('#cc_stop ul li')
+                    //     .map((i, ele) => {
+                    //         return (
+                    //             $(ele)
+                    //                 .find('i')
+                    //                 .attr('class') || ''
+                    //         )
+                    //     })
+                    //     .get()
+                    // const response = {
+                    //     code: 200,
+                    //     data: {
+                    //         busName,
+                    //         direction,
+                    //         stationInfo,
+                    //         stationList,
+                    //         busList,
+                    //         currentBusCount: Number(responseBody['seq'])
+                    //     },
+                    //     status: 'success'
+                    // }
+                    resolve(res)
                 }
             })
     })

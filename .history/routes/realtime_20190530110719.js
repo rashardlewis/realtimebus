@@ -14,11 +14,11 @@ router.get('/bus/list', (req, res) => {
     })
 })
 
-router.get('/bus/direction', (req, res) => {
-    getDirectionFromBus(req).then(response => {
-        res.send(response)
-    })
-})
+// router.get('/bus/direction', (req, res) => {
+//     getDirectionFromBus().then(response => {
+//         res.send(response)
+//     })
+// })
 
 // 获取实时公交信息
 router.get('/bus/info', (req, res) => {

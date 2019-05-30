@@ -7,9 +7,7 @@ const targetUrl = 'http://www.bjbus.com/home/ajax_rtbus_data.php'
 
 // 根据关键词获取公交列表
 export function getBusList(req) {
-    const {
-        query: { keyword }
-    } = req
+    console.log(req.params)
     return new Promise((resolve, reject) => {
         superagent
             .get('http://api.go2map.com/engine/api/businfo/json')
@@ -23,7 +21,7 @@ export function getBusList(req) {
             })
             .query({
                 hidden_MapTool: 'busex2.BusInfo',
-                what: keyword || '',
+                what: '31',
                 city: '北京市',
                 pageindex: '1',
                 pagesize: '10',
@@ -36,101 +34,47 @@ export function getBusList(req) {
                 if (err) {
                     reject(err)
                 } else {
-                    const response = JSON.parse(res.text).response
-                    let result = {
-                        data: [],
-                        status: {
-                            code: 200,
-                            message: ''
-                        },
-                        success: true
-                    }
-                    if (response && response.hasOwnProperty('error')) {
-                        // 查询成功，但未找到任何信息
-                        result['status'] = {
-                            code: response.error.id,
-                            message: response.error.msg || '失败'
+                    const responseBody = JSON.parse(res.text).response.resultset
+                    const infoList = responseBody.data.feature.slice(0, 10)
+                    const busList = infoList.map(v => {
+                        const busName = v.caption.substring(
+                            0,
+                            v.caption.indexOf('(')
+                        )
+                        const direction = v.caption.match(/\(([^)]*)\)/)[1]
+                        return {
+                            busName,
+                            direction
                         }
-                    } else if (
-                        response &&
-                        response.hasOwnProperty('resultset')
-                    ) {
-                        // 查询成功，返回busList
-                        const responseBody = response.resultset
-                        let infoList = responseBody.data.feature
-                        infoList = Array.isArray(infoList)
-                            ? infoList.slice(0, 10)
-                            : [infoList]
-                        const busList = infoList.map(v => {
-                            const busName = v.caption.substring(
-                                0,
-                                v.caption.indexOf('(')
-                            )
-                            const direction = v.caption.match(/\(([^)]*)\)/)[1]
-                            return {
-                                busName,
-                                direction
-                            }
-                        })
-                        result['data'] = busList
-                    } else {
-                        result['status'] = {
-                            code: '400',
-                            message: '未知'
-                        }
-                    }
-                    resolve(result)
+                    })
+                    const response = busList
+                    resolve(response)
                 }
             })
     })
 }
 
 // 根据公交名称获取方向(双向)
-export function getDirectionFromBus(req) {
-    const {
-        query: { busName, direction }
-    } = req
+export function getDirectionFromBus() {
     return new Promise((resolve, reject) => {
         superagent
             .get(targetUrl)
             .query({
                 act: 'getLineDirOption',
-                selBLine: busName
+                selBLine: '317'
             })
             .end((err, res) => {
                 if (err) {
                     reject(err)
                 } else {
-                    let result = {
-                        data: {},
-                        status: {
-                            code: 200,
-                            message: ''
-                        },
-                        success: true
-                    }
                     const responseBody = res.text
                     const $ = cheerio.load(responseBody)
                     const directions = $('option')
                         .filter(i => i > 0)
-                        .map((i, ele) => ({
-                            id: $(ele).attr('value'),
-                            name: $(ele).text()
-                        }))
+                        .map((i, ele) => $(ele).text())
                         .get()
-                    const station = directions.find(
-                        v => v.name.indexOf(direction) !== -1
-                    )
-                    if (station) {
-                        result['data']['id'] = station.id
-                    } else {
-                        result['status'] = {
-                            code: 400,
-                            message: '未找到该方向ID'
-                        }
-                        result['success'] = false
-                    }
-                    resolve(result)
+                    const response = directions
+                    resolve(response)
                 }
             })
     })
@@ -138,37 +82,22 @@ export function getDirectionFromBus(req) {
 
 // 根据公交名称和当前公交站序号获取实时公交信息
 export function getRealTimeInfo(req) {
-    const {
-        query: { busName, directionId, stationIndex }
-    } = req
-    console.log('busName: ', busName)
-    console.log('directionId: ', directionId)
-    console.log('stationIndex: ', stationIndex)
     return new Promise((resolve, reject) => {
         superagent
             .get(targetUrl)
             .query({
                 act: 'busTime',
-                selBLine: String(busName),
-                selBDir: String(directionId),
-                selBStop: String(stationIndex)
+                selBLine: '317',
+                selBDir: '4895033067452418567',
+                selBStop: '7'
             })
             .end((err, res) => {
                 if (err) {
-                    console.log(err)
                     reject(err)
                 } else {
-                    let result = {
-                        data: {},
-                        status: {
-                            code: 200,
-                            message: ''
-                        },
-                        success: true
-                    }
                     const responseBody = JSON.parse(res.text)
                     const $ = cheerio.load(responseBody['html'])
-                    const busRealName = $('h3#lh').text()
+                    const busName = $('h3#lh').text()
                     const direction = $('h2#lm').text()
                     const stationInfo = {
                         standardInfo: $('.inquiry_header article p')
@@ -190,15 +119,19 @@ export function getRealTimeInfo(req) {
                             )
                         })
                         .get()
-                    result['data'] = {
-                        busRealName,
-                        direction,
-                        stationInfo,
-                        stationList,
-                        busList,
-                        currentBusCount: Number(responseBody['seq'])
+                    const response = {
+                        code: 200,
+                        data: {
+                            busName,
+                            direction,
+                            stationInfo,
+                            stationList,
+                            busList,
+                            currentBusCount: Number(responseBody['seq'])
+                        },
+                        status: 'success'
                     }
-                    resolve(result)
+                    resolve(response)
                 }
             })
     })
