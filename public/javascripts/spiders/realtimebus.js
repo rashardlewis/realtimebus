@@ -121,11 +121,7 @@ export function getBusList(req) {
 								const finalResult = busList.filter(item =>
 									dbResult.find(name => item.busName === name)
 								);
-								result['data'] = {
-									busList,
-									dbResult,
-									finalResult
-								};
+								result['data'] = finalResult;
 								resolve(result);
 							});
 						}
