@@ -4,6 +4,9 @@ var path = require('path')
 var cookieParser = require('cookie-parser')
 var logger = require('morgan')
 
+import { mongodb } from './public/database/mongodb'
+mongodb('buslist');
+
 import indexRouter from './routes/index'
 import realtimeRouter from './routes/realtime'
 import usersRouter from './routes/users'

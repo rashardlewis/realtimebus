@@ -1,45 +1,53 @@
-var express = require('express')
-var router = express.Router()
+var express = require('express');
+var router = express.Router();
 import {
-    getBusList,
-    getDirectionFromBus,
-    getRealTimeInfo,
-    refresh,
-    test
-} from '../public/javascripts/spiders/realtimebus'
+	getRealTimeBusList,
+	getBusList,
+	getDirectionFromBus,
+	getRealTimeInfo,
+	refresh,
+	test
+} from '../public/javascripts/spiders/realtimebus';
+
+// 获取可查询实时信息的公交车列表
+router.get('/bus/realtimelist', (req, res) => {
+	getRealTimeBusList().then(response => {
+		res.send(response);
+	});
+});
 
 // 获取实时公交信息
 router.get('/bus/list', (req, res) => {
-    getBusList(req).then(response => {
-        res.send(response)
-    })
-})
+	getBusList(req).then(response => {
+		res.send(response);
+	});
+});
 
 // 获取公交方向ID
 router.get('/bus/direction', (req, res) => {
-    getDirectionFromBus(req).then(response => {
-        res.send(response)
-    })
-})
+	getDirectionFromBus(req).then(response => {
+		res.send(response);
+	});
+});
 
 router.get('/bus/test', (req, res) => {
-    const response = test()
-    console.log('response: ', response)
-    response.then(v => res.send(v))
-})
+	const response = test();
+	console.log('response: ', response);
+	response.then(v => res.send(v));
+});
 
 // 获取实时公交信息
 router.get('/bus/info', (req, res) => {
-    getRealTimeInfo(req).then(response => {
-        res.send(response)
-    })
-})
+	getRealTimeInfo(req).then(response => {
+		res.send(response);
+	});
+});
 
 // 刷新实时公交信息
 router.get('/bus/refresh', (req, res) => {
-    refresh(req).then(response => {
-        res.send(response)
-    })
-})
+	refresh(req).then(response => {
+		res.send(response);
+	});
+});
 
-module.exports = router
+module.exports = router;
