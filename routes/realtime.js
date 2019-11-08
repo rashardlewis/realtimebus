@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 import {
-	getRealTimeBusList,
+	refreshDataBase,
 	getBusList,
 	getDirectionFromBus,
 	getRealTimeInfo,
@@ -9,9 +9,9 @@ import {
 	test
 } from '../public/javascripts/spiders/realtimebus';
 
-// 获取可查询实时信息的公交车列表
-router.get('/bus/realtimelist', (req, res) => {
-	getRealTimeBusList().then(response => {
+// 同步数据库&北京公交官网中的实时公交列表信息
+router.get('/bus/refreshdatabase', (req, res) => {
+	refreshDataBase().then(response => {
 		res.send(response);
 	});
 });

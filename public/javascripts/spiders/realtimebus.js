@@ -5,7 +5,7 @@ require('superagent-charset')(superagent);
 
 const targetUrl = 'http://www.bjbus.com/home/ajax_rtbus_data.php';
 
-export function getRealTimeBusList() {
+export function refreshDataBase() {
 	return new Promise((resolve, reject) => {
 		superagent.get('http://www.bjbus.com/home').end((err, res) => {
 			if (err) {
@@ -30,9 +30,114 @@ export function getRealTimeBusList() {
 						else resolve(docs);
 					});
 				});
-				// resolve(result);
 			}
 		});
+	});
+}
+
+// 根据关键词获取公交列表
+export function getBusList(req) {
+	const {
+		query: { keyword }
+	} = req;
+	return new Promise((resolve, reject) => {
+		superagent
+			.get('http://api.go2map.com/engine/api/businfo/json')
+			.charset('gbk')
+			.set({
+				'Content-Type': 'text/html;charset=utf-8',
+				Accept:
+					'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+				'Accept-Encoding': 'gzip, deflate',
+				'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+			})
+			.query({
+				hidden_MapTool: 'busex2.BusInfo',
+				what: keyword || '',
+				city: '北京市',
+				pageindex: '1',
+				pagesize: '10',
+				fromuser: 'bjbus',
+				datasource: 'bjbus',
+				clientid: '9db0f8fcb62eb46c'
+				// cb: 'SGS.modules_businfo16afe6b421b10'
+			})
+			.end((err, res) => {
+				if (err) {
+					reject(err);
+				} else {
+					const response = JSON.parse(res.text).response;
+					let result = {
+						data: [],
+						status: {
+							code: 200,
+							message: ''
+						},
+						success: true
+					};
+					if (response && response.hasOwnProperty('error')) {
+						// 查询成功，但未找到任何信息
+						result['status'] = {
+							code: response.error.id,
+							message: response.error.msg || '失败'
+						};
+						resolve(result);
+					} else if (response && response.hasOwnProperty('resultset')) {
+						// 查询成功，返回busList
+						const responseBody = response.resultset;
+						let infoList = responseBody.data.feature;
+						infoList = Array.isArray(infoList)
+							? infoList.slice(0, 10)
+							: [infoList];
+						const busList = infoList
+							.map(v => {
+								let busName;
+								if (v.caption.indexOf('(') !== 0) {
+									busName = v.caption.substring(0, v.caption.indexOf('('));
+								} else {
+									busName = c.caption;
+								}
+								const directionInfo = v.caption.match(/\(([^)]*)\)/);
+								let direction;
+								if (directionInfo) direction = directionInfo[1];
+								if (busName && direction) {
+									return {
+										busName,
+										direction
+									};
+								}
+							})
+							.filter(v => v !== null && v !== undefined);
+						if (!busList) {
+							result['status']['message'] =
+								'抱歉,没有找到任何与所输关键词相关的信息!';
+							resolve(result);
+						} else {
+							const queryItem = {
+								name: { $regex: keyword } // $regex 正则匹配已进行模糊搜索
+							};
+							Models.realtimelist.find(queryItem, (error, docs) => {
+								const dbResult = docs.map(item => item.name);
+								const finalResult = busList.filter(item =>
+									dbResult.find(name => item.busName === name)
+								);
+								result['data'] = {
+									busList,
+									dbResult,
+									finalResult
+								};
+								resolve(result);
+							});
+						}
+					} else {
+						result['status'] = {
+							code: '400',
+							message: '未知'
+						};
+						resolve(result);
+					}
+				}
+			});
 	});
 }
 
@@ -42,104 +147,32 @@ export function getRealTimeBusList() {
 // 		query: { keyword }
 // 	} = req;
 // 	return new Promise((resolve, reject) => {
-// 		superagent
-// 			.get('http://api.go2map.com/engine/api/businfo/json')
-// 			.charset('gbk')
-// 			.set({
-// 				'Content-Type': 'text/html;charset=utf-8',
-// 				Accept:
-// 					'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
-// 				'Accept-Encoding': 'gzip, deflate',
-// 				'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
-// 			})
-// 			.query({
-// 				hidden_MapTool: 'busex2.BusInfo',
-// 				what: keyword || '',
-// 				city: '北京市',
-// 				pageindex: '1',
-// 				pagesize: '10',
-// 				fromuser: 'bjbus',
-// 				datasource: 'bjbus',
-// 				clientid: '9db0f8fcb62eb46c'
-// 				// cb: 'SGS.modules_businfo16afe6b421b10'
-// 			})
-// 			.end((err, res) => {
-// 				if (err) {
-// 					reject(err);
-// 				} else {
-// 					const response = JSON.parse(res.text).response;
-// 					let result = {
-// 						data: [],
-// 						status: {
-// 							code: 200,
-// 							message: ''
-// 						},
-// 						success: true
-// 					};
-// 					if (response && response.hasOwnProperty('error')) {
-// 						// 查询成功，但未找到任何信息
-// 						result['status'] = {
-// 							code: response.error.id,
-// 							message: response.error.msg || '失败'
-// 						};
-// 					} else if (response && response.hasOwnProperty('resultset')) {
-// 						// 查询成功，返回busList
-// 						const responseBody = response.resultset;
-// 						let infoList = responseBody.data.feature;
-// 						infoList = Array.isArray(infoList)
-// 							? infoList.slice(0, 10)
-// 							: [infoList];
-// 						const busList = infoList
-// 							.map(v => {
-// 								let busName;
-// 								if (v.caption.indexOf('(') !== 0) {
-// 									busName = v.caption.substring(0, v.caption.indexOf('('));
-// 								} else {
-// 									busName = c.caption;
-// 								}
-// 								const directionInfo = v.caption.match(/\(([^)]*)\)/);
-// 								let direction;
-// 								if (directionInfo) direction = directionInfo[1];
-// 								if (busName && direction) {
-// 									return {
-// 										busName,
-// 										direction
-// 									};
-// 								}
-// 							})
-// 							.filter(v => v !== null && v !== undefined);
-// 						result['data'] = busList;
-// 						if (busList) {
-// 							result['status']['message'] =
-// 								'抱歉,没有找到任何与所输关键词相关的信息!';
-// 						}
-// 					} else {
-// 						result['status'] = {
-// 							code: '400',
-// 							message: '未知'
-// 						};
-// 					}
-// 					resolve(result);
-// 				}
-// 			});
+// 		const queryItem = {
+// 			name: { $regex: keyword } // $regex 正则匹配已进行模糊搜索
+// 		};
+// 		let result = {
+// 			data: [],
+// 			status: {
+// 				code: 200,
+// 				message: ''
+// 			},
+// 			success: true
+// 		};
+// 		Models.realtimelist.find(queryItem, (err, docs) => {
+// 			if (err) {
+// 				// 查询成功，但未找到任何信息
+// 				result['status'] = {
+// 					code: 200,
+// 					message: err || '失败'
+// 				};
+
+// 				reject(result);
+// 			} else {
+
+//       }resolve(docs);
+// 		});
 // 	});
 // }
-
-// 根据关键词获取公交列表
-export function getBusList(req) {
-	const {
-		query: { keyword }
-	} = req;
-	return new Promise((resolve, reject) => {
-		const queryItem = {
-			name: { $regex: keyword } // $regex 正则匹配已进行模糊搜索
-		};
-		Models.realtimelist.find(queryItem, (err, docs) => {
-			if (err) reject(err);
-			else resolve(docs);
-		});
-	});
-}
 
 // 根据公交名称获取方向(双向)
 export function getDirectionFromBus(req) {
